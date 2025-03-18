@@ -19,18 +19,44 @@ def main():
     print("EXCEL TO MARKDOWN CONVERTER")
     print("=" * 60)
     
+    # Kiểm tra các thư viện cần thiết
+    try:
+        import pandas
+        import numpy
+        import openpyxl
+        import tabulate
+        print(f"✓ Pandas version: {pandas.__version__}")
+        print(f"✓ Openpyxl version: {openpyxl.__version__}")
+        print(f"✓ Tabulate version: {tabulate.__version__}")
+        print(f"✓ Numpy version: {numpy.__version__}")
+    except ImportError as e:
+        print(f"Lỗi: Thiếu thư viện - {str(e)}")
+        print("Vui lòng chạy Install_Dependencies.command (Mac) hoặc Install_Dependencies.bat (Windows)")
+        input("\nNhấn Enter để thoát...")
+        return
+    
     # Đường dẫn tuyệt đối đến thư mục input và output
     input_dir = os.path.join(current_dir, "input")
     output_dir = os.path.join(current_dir, "output")
     
     # Kiểm tra thư mục input và output
     if not os.path.exists(input_dir):
-        os.makedirs(input_dir)
-        print(f"Đã tạo thư mục input: {input_dir}")
+        try:
+            os.makedirs(input_dir)
+            print(f"Đã tạo thư mục input: {input_dir}")
+        except OSError as e:
+            print(f"Lỗi khi tạo thư mục input: {str(e)}")
+            input("\nNhấn Enter để thoát...")
+            return
     
     if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Đã tạo thư mục output: {output_dir}")
+        try:
+            os.makedirs(output_dir)
+            print(f"Đã tạo thư mục output: {output_dir}")
+        except OSError as e:
+            print(f"Lỗi khi tạo thư mục output: {str(e)}")
+            input("\nNhấn Enter để thoát...")
+            return
     
     # Tìm tất cả file Excel trong thư mục input
     excel_files = []
@@ -42,6 +68,20 @@ def main():
     if not excel_files:
         print("\nKhông tìm thấy file Excel nào trong thư mục input!")
         print(f"Vui lòng đặt file Excel vào thư mục: {input_dir}")
+        
+        # Mở thư mục input để người dùng có thể đặt file vào đó
+        try:
+            if sys.platform == 'win32':
+                os.startfile(input_dir)
+            elif sys.platform == 'darwin':  # macOS
+                import subprocess
+                subprocess.call(['open', input_dir])
+            else:  # Linux
+                import subprocess
+                subprocess.call(['xdg-open', input_dir])
+        except Exception:
+            pass  # Nếu không mở được thư mục thì bỏ qua
+            
         input("\nNhấn Enter để thoát...")
         return
     
@@ -77,6 +117,8 @@ def main():
                 
         except Exception as e:
             print(f"   ✗ Lỗi khi chuyển đổi {excel_file}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             error_count += 1
     
     # Hiển thị kết quả
@@ -86,6 +128,19 @@ def main():
     
     if success_count > 0:
         print(f"\nCác file Markdown đã được lưu trong thư mục: {output_dir}")
+        
+        # Mở thư mục output nếu có file thành công
+        try:
+            if sys.platform == 'win32':
+                os.startfile(output_dir)
+            elif sys.platform == 'darwin':  # macOS
+                import subprocess
+                subprocess.call(['open', output_dir])
+            else:  # Linux
+                import subprocess
+                subprocess.call(['xdg-open', output_dir])
+        except Exception:
+            pass  # Nếu không mở được thư mục thì bỏ qua
     
     print("\nCảm ơn bạn đã sử dụng Excel2Markdown!")
     input("\nNhấn Enter để thoát...")

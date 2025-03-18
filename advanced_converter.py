@@ -55,13 +55,37 @@ class AdvancedExcelConverter:
         return None
     
     def _format_value(self, value, is_bold=False, is_italic=False):
-        """Format cell value with Markdown styling"""
+        """
+        Format cell value with Markdown styling
+        
+        Parameters:
+        -----------
+        value : any
+            Cell value to format
+        is_bold : bool
+            Whether to apply bold formatting
+        is_italic : bool
+            Whether to apply italic formatting
+            
+        Returns:
+        --------
+        str
+            Formatted value as Markdown
+        """
         if value is None:
             return ""
             
         # Convert to string and escape any Markdown special characters
         value_str = str(value)
+        # Escape pipe characters to avoid breaking table structure
         value_str = value_str.replace('|', '\\|')
+        # Escape asterisks to avoid unintended emphasis
+        value_str = value_str.replace('*', '\\*')
+        # Escape underscores to avoid unintended emphasis
+        value_str = value_str.replace('_', '\\_')
+        # Escape backticks to avoid unintended code blocks
+        value_str = value_str.replace('`', '\\`')
+        # Replace newlines with HTML line breaks
         value_str = value_str.replace('\n', '<br>')
         
         # Apply formatting
@@ -246,14 +270,20 @@ def convert_excel_advanced(excel_file, output_file=None, sheet_name=None, includ
         md_content = converter.convert_to_markdown(sheet_name, include_formulas)
         
         if output_file:
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(md_content)
-            return True
+            try:
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(md_content)
+                return True
+            except IOError as e:
+                print(f"Error writing to output file: {e}")
+                return False
         else:
             return md_content
             
     except Exception as e:
         print(f"Error in advanced conversion: {e}")
+        import traceback
+        traceback.print_exc()  # Print detailed error information for debugging
         return False
 
 

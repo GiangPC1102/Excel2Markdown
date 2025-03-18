@@ -6,6 +6,7 @@ import pandas as pd
 import sys
 import os
 from pathlib import Path
+import subprocess
 
 class Excel2MarkdownGUI:
     def __init__(self, root):
@@ -115,6 +116,11 @@ class Excel2MarkdownGUI:
             return
         
         try:
+            # Kiểm tra xem file đầu vào có tồn tại không
+            if not os.path.exists(excel_file):
+                messagebox.showerror("Error", f"Excel file does not exist: {excel_file}")
+                return
+                
             sheet_name = self.get_selected_sheet()
             include_index = self.include_index_var.get()
             
@@ -144,8 +150,20 @@ class Excel2MarkdownGUI:
             self.preview_text.delete(1.0, tk.END)
             self.preview_text.insert(tk.END, md_content)
             
+        except pd.errors.EmptyDataError:
+            messagebox.showerror("Error", "The Excel file contains no data.")
+            self.preview_text.delete(1.0, tk.END)
+            self.preview_text.insert(tk.END, "Error: The Excel file contains no data.")
+        except pd.errors.ParserError:
+            messagebox.showerror("Error", "Error parsing the Excel file. File may be corrupted.")
+            self.preview_text.delete(1.0, tk.END)
+            self.preview_text.insert(tk.END, "Error: File parsing failed. The file may be corrupted.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate preview: {e}")
+            messagebox.showerror("Error", f"Failed to generate preview: {str(e)}")
+            self.preview_text.delete(1.0, tk.END)
+            self.preview_text.insert(tk.END, f"Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def convert_to_markdown(self):
         excel_file = self.input_file_var.get()
@@ -162,6 +180,20 @@ class Excel2MarkdownGUI:
         try:
             sheet_name = self.get_selected_sheet()
             include_index = self.include_index_var.get()
+            
+            # Kiểm tra xem file đầu vào có tồn tại không
+            if not os.path.exists(excel_file):
+                messagebox.showerror("Error", f"Excel file does not exist: {excel_file}")
+                return
+                
+            # Kiểm tra xem có thể tạo file đầu ra không
+            try:
+                output_dir = os.path.dirname(output_file)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+            except OSError as e:
+                messagebox.showerror("Error", f"Cannot create output directory: {e}")
+                return
             
             # Get all sheet names if not specified
             if sheet_name is None:
@@ -191,8 +223,28 @@ class Excel2MarkdownGUI:
             
             messagebox.showinfo("Success", f"Excel file converted to Markdown: {output_file}")
             
+            # Mở thư mục chứa file
+            try:
+                output_dir = os.path.dirname(os.path.abspath(output_file))
+                if sys.platform == 'win32':
+                    os.startfile(output_dir)
+                elif sys.platform == 'darwin':  # macOS
+                    subprocess.call(['open', output_dir])
+                else:  # Linux
+                    subprocess.call(['xdg-open', output_dir])
+            except Exception:
+                pass  # Nếu không mở được thư mục thì bỏ qua
+            
+        except pd.errors.EmptyDataError:
+            messagebox.showerror("Error", "The Excel file contains no data.")
+        except pd.errors.ParserError:
+            messagebox.showerror("Error", "Error parsing the Excel file. File may be corrupted.")
+        except PermissionError:
+            messagebox.showerror("Error", f"Permission denied when writing to file: {output_file}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to convert file: {e}")
+            messagebox.showerror("Error", f"Failed to convert file: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
 def main():
     root = tk.Tk()
